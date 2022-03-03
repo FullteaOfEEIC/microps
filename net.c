@@ -10,7 +10,8 @@ static struct net_device *devices;
 
 struct net_device* net_device_alloc(void){
 	struct net_device *dev;
-	dev = memory_alloc(sizeof(*dev));
+	size_t sizeofdev = sizeof(*dev);
+	dev = memory_alloc(sizeofdev);
 	if(!dev){
 		errorf("memory_alloc() failure");
 		return NULL;

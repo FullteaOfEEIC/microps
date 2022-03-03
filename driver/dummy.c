@@ -25,11 +25,17 @@ struct net_device* dummy_init(void){
 		errorf("net_device_alloc() failure");
 		return NULL;
 	}
-	dev->type = NET_DEVICE_TYPE_DUMMY;
+	debugf("here");
 	dev->mtu = DUMMY_MTU;
+	dev->type = NET_DEVICE_TYPE_DUMMY;
+	debugf("here1");
+	//dev->mtu = DUMMY_MTU;
+	debugf("here3.3");
 	dev->hlen = 0;
 	dev->alen = 0;
+	debugf("here3.5");
 	dev->ops = &dummy_ops;
+	debugf("here3");
 	if(net_device_register(dev) == -1){
 		errorf("net_device_register() failure");
 		return NULL;

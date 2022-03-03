@@ -64,14 +64,17 @@ static int net_device_close(struct net_device *dev){
 }
 
 int net_device_output(struct net_device *dev, uint16_t type, const uint8_t *data, size_t len, const void *dst){
+	debugf("HERE0");
 	if(!NET_DEVICE_IS_UP(dev)){
 		errorf("device not opened, dev=%s", dev->name);
 		return -1;
 	}
+	debugf("HERE1");
 	if(len > dev->mtu){
-		errorf("too longer than mtu, dev=%s, mtu=%zu", dev->name, dev->mtu, len);
+		errorf("too longer than mtu, dev=%s, mtu=%u, len=%zu", dev->name, dev->mtu, len);
 		return -1;
 	}
+	debugf("HERE2");
 	debugf("dev=%s, type=0x%04x, len=%zu", dev->name, type, len);
 	debugdump(data, len);
 	if(dev->ops->transmit(dev, type, data, len, dst)==-1){

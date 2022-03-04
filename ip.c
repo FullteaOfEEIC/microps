@@ -6,6 +6,9 @@
 #include "util.h"
 #include "net.h"
 #include "ip.h"
+#include "platform.h"
+
+static struct ip_iface *ifaces;
 
 struct ip_hdr{
     uint8_t vhl;
@@ -81,6 +84,18 @@ static void ip_dump(const uint8_t *data, size_t len){
     hexdump(stderr, data, len)
 #endif //HEXDUMP
     funlockfile(stderr);
+}
+
+struct ip_iface *ip_iface_alloc(const char *unicast, const char *netmask){
+
+}
+
+int ip_iface_register(struct net_device *dev, struct ip_iface *iface){
+
+}
+
+struct ip_iface *ip_iface_select(ip_addr_t addr){
+    
 }
 
 static void ip_input(const uint8_t *data, size_t len, struct net_device *dev){

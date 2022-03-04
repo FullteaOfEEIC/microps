@@ -30,7 +30,7 @@ int ip_addr_pton(const char *p, ip_addr_t *n){
 
     sp = (char*)p;
     for(int idx=0;idx<4;idx++){
-        ret = strtol(sp, &ep, 10)
+        ret = strtol(sp, &ep, 10);
         if (ret<0 || ret>255){
             return -1;
         }
@@ -54,10 +54,74 @@ char* ip_addr_ntop(ip_addr_t n, char* p, size_t size){
 }
 
 static void ip_dump(const uint8_t *data, size_t len){
-    
+    struct ip_hdr *hdr;
+    uint8_t v, hl, hlen;
+    uint16_t total, offset;
+    char addr[IP_ADDR_STR_LEN];
+
+    flockfile(stderr);
+    hdr = (struct ip_hdr *)data;
+    v = (hdr->vhl & 0xf0) >> 4;
+    hl = hdr->vhl & 0x0f;
+    hlen = hl << 2;
+    fprintf(stderr, "\tvhl:\t0x%02x [v:%u, hl:%u (%u)\n", hdr->vhl, v, hl, hlen);
+    fprintf(stderr, "\ttos:\t0x%02x\n", hdr->tos);
+    total = ntoh16(hdr->total);
+    fprintf(stderr, "\ttotal\t%u (payload: %u)\n", total, total-hlen);
+    fprintf(stderr, "\tid:\t%u\n", ntoh16(hdr->id));
+    offset = ntoh16(hdr->offset);
+    fprintf(stderr, "\toffset:\t0x%04x [flags=%x, offset=%u]\n", offset, (offset & 0xe000) >> 13, offset & 0x1fff);
+    fprintf(stderr, "\tttl:\t%u\n", hdr->ttl);
+    fprintf(stderr, "\tprotocol:\t%u\n", hdr->protocol);
+    fprintf(stderr, "\tsum:\t0x%04x\n", ntoh16(hdr->sum));
+    fprintf(stderr, "\tsrc:\t%s\n", ip_addr_ntop(hdr->src, addr, sizeof(addr)));
+    fprintf(stderr, "\tdst:\t%s\n", ip_addr_ntop(hdr->dst, addr, sizeof(addr)));
+
+#ifdef HEXDUMP
+    hexdump(stderr, data, len)
+#endif //HEXDUMP
+    funlockfile(stderr);
 }
 
 static void ip_input(const uint8_t *data, size_t len, struct net_device *dev){
+    struct ip_hdr *hdr;
+    uint8_t v;
+    uint16_t hlen, total, offset;
+
+    if(len<IP_HDR_SIZE_MIN){
+        errorf("too short (shorter than IP_HDR_SIZE_MIN)");
+        return;
+    }
+    hdr = (struct ip_hdr *)data;
+    v = (hdr->vhl & 0xf0) >> 4;
+    hlen = hdr->vhl & 0x0f;
+    total = ntoh16(hdr->total);
+    if(v!=IP_VERSION_IPV4){
+        errorf("Not IPv4");
+        return;
+    }
+    else if(len<hlen){
+        errorf("too short (shorter than ip_header)");
+        return;
+    }
+    else if(total<len){
+        errorf("too short (shorter than ip packet)");
+        return;
+    }
+
+    uint16_t sum = cksum16((uint16_t *)data, len, 0);
+    if(sum!=0){
+        errorf("invalid checksum");
+        return;
+    }
+
+    offset = ntoh16(hdr->offset);
+    if(offset & 0x2000 || offset & 0x1fff){
+        errorf("fragments does not supported. Sorry!");
+        return;
+    }
+    debugf("dev=%s, protocol=%u, total=%u", dev->name, hdr->protocol, total);
+    ip_dump(data, total);
 }
 
 int ip_init(void){

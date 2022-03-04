@@ -68,6 +68,9 @@ static void* intr_thread(void *art){
             case SIGHUP:
                 terminate = 1;
                 break;
+            case SIGUSR1:
+                net_softirq_handler();
+                break;
             default:
                 for(entry = irqs;entry;entry=entry->next){
                     if(entry->irq==(unsigned int)sig){

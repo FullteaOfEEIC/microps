@@ -1,5 +1,5 @@
-#ifndef PLATFORM_H
-#define PLATFORM_H
+#ifndef PLATFORM_H_03040943
+#define PLATFORM_H_03040943
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -53,6 +53,7 @@ mutex_unlock(mutex_t *mutex)
 */
 
 #define INTR_IRQ_BASE (SIGRTMIN+1)
+#define INTR_IRQ_SOFTIRQ SIGUSR1
 #define INTR_IRQ_SHARED 0x0001
 
 extern int intr_request_irq(unsigned int irq, int (*handler)(unsigned int irq, void *id), int flags, const char *name, void *dev);
@@ -61,4 +62,4 @@ extern int intr_run(void);
 extern void intr_shutdown(void);
 extern int intr_init(void);
 
-#endif
+#endif //PLATFORM_H_03040943

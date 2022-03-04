@@ -6,6 +6,7 @@
 #include "platform.h"
 #include "util.h"
 #include "net.h"
+#include "ip.h"
 
 static struct net_device *devices;
 static struct net_protocol *protocols;

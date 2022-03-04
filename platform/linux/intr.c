@@ -5,6 +5,7 @@
 
 #include "platform.h"
 #include "util.h"
+#include "net.h"
 
 struct irq_entry{
     struct irq_entry *next;
@@ -50,6 +51,7 @@ int intr_request_irq(unsigned int irq, int (*handler)(unsigned int irq, void *de
 }
 
 int intr_raise_irq(unsigned int irq){
+    debugf("irq raised: irq=%u", irq);
     return pthread_kill(tid, (int)irq);
 }
 
@@ -103,7 +105,7 @@ int intr_run(void){
 void intr_shutdown(void){
     if(pthread_equal(tid, pthread_self())!=0){
         /*Thread not created*/
-        return NULL;
+        return;
     }
     pthread_kill(tid, SIGHUP);
     pthread_join(tid, NULL);
@@ -114,5 +116,6 @@ int intr_init(void){
     pthread_barrier_init(&barrier, NULL, 2);
     sigemptyset(&sigmask);
     sigaddset(&sigmask, SIGHUP);
+    sigaddset(&sigmask, SIGUSR1);
     return 0;
 }

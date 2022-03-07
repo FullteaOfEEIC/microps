@@ -39,7 +39,7 @@ static int ether_tap_addr(struct net_device *dev){
     struct ifreq ifr = {};
 
     soc = socket(AF_INET, SOCK_DGRAM, 0);
-    if (soc==-1){
+    if (soc == -1){
         errorf("socket: %s, dev=%s", strerror(errno), dev->name);
         return -1;
     }
@@ -73,26 +73,26 @@ static int ether_tap_open(struct net_device *dev){
     }
 
     /* Set Asynchronous I/O signal delivery destination */
-    if (fcntl(tap->fd, F_SETOWN, getpid())==-1){
+    if (fcntl(tap->fd, F_SETOWN, getpid()) == -1){
         errorf("fcntl(F_SETOWN): %s, dev=%s", strerror(errno), dev->name);
         close(tap->fd);
         return -1;
     }
     /* Enable Asynchronous I/O */
-    if (fcntl(tap->fd, F_SETFL, O_ASYNC)==-1){
+    if (fcntl(tap->fd, F_SETFL, O_ASYNC) == -1){
         errorf("fcntl(F_SETFL): %s, dev=%s", strerror(errno), dev->name);
         close(tap->fd);
         return -1;
     }
 
     /* Use other signal instead of SIGIO */
-    if (fcntl(tap->fd, F_SETSIG, tap->irq)==-1){
+    if (fcntl(tap->fd, F_SETSIG, tap->irq) == -1){
         errorf("fcntl(F_SETSIG): %s, dev=%s", strerror(errno), dev->name);
         close(tap->fd);
         return -1;
     }
 
-    if(memcmp(dev->addr, ETHER_ADDR_ANY, ETHER_ADDR_LEN)==0){
+    if(memcmp(dev->addr, ETHER_ADDR_ANY, ETHER_ADDR_LEN) == 0){
         if(ether_tap_addr(dev)==-1){
             errorf("ether_tap_addr() failure, dev=%s", dev->name);
             close(tap->fd);

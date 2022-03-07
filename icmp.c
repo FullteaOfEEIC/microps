@@ -77,6 +77,7 @@ static void icmp_dump(const uint8_t *data, size_t len){
 }
 
 void icmp_input(const uint8_t *data, size_t len, ip_addr_t src, ip_addr_t dst, struct ip_iface *iface){
+    debugf("icmp input");
     struct icmp_hdr *hdr;
     char addr1[IP_ADDR_STR_LEN];
     char addr2[IP_ADDR_STR_LEN];

@@ -220,7 +220,9 @@ static void ip_input(const uint8_t *data, size_t len, struct net_device *dev){
     ip_dump(data, total);
     struct ip_protocol* entry;
     for(entry = protocols; entry; entry=entry->next){
+        debugf("searching"); 
         if(entry->type==hdr->protocol){
+            debugf("find");
             entry->handler((uint8_t*)hdr+hlen, total-hlen, hdr->src, hdr->dst, iface); //事故りそうで怖いような、そうでもないような(ポインタだからいいのか)
         }
     }

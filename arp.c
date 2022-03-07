@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "util.h"
 #include "net.h"
 #include "ether.h"
 #include "arp.h"
 #include "ip.h"
+#include "platform.h"
 
 /* see https://www.iana.org/assignments/arp-parameters/arp-parameters.txt */
 #define ARP_HRD_ETHER 0x0001
@@ -15,6 +17,13 @@
 
 #define ARP_OP_REQUEST 1
 #define ARP_OP_REPLY 2
+
+#define ARP_CACHE_SIZE 32
+
+#define ARP_CACHE_STATE_FREE       0
+#define ARP_CACHE_STATE_INCOMPLETE 1
+#define ARP_CACHE_STATE_RESOLVED   2
+#define ARP_CACHE_STATE_STATIC     3
 
 struct arp_hdr{
     uint16_t hrd;
@@ -31,6 +40,16 @@ struct arp_ether_ip{
     uint8_t tha[ETHER_ADDR_LEN];
     uint8_t tpa[IP_ADDR_LEN];   
 };
+
+struct arp_cache {
+    unsigned char state;
+    ip_addr_t pa;
+    uint8_t ha[ETHER_ADDR_LEN];
+    struct timeval timestamp;
+}
+
+static mutex_t mutex = MUTEX_INITIALIZER;
+static struct arp_cache caches[ARP_CACHE_SIZE];
 
 static char *arp_opcode_ntoa(uint16_t opcode){
     switch(ntoh16(opcode)){
@@ -65,6 +84,21 @@ static void arp_dump(const uint8_t *data, size_t len){
     hexdump(stderr, data, len);
 #endif //HEXDUMP
     funlockfile(stderr);
+}
+
+static void arp_cache_delete(struct arp_cache *cache){   
+}
+
+static struct arp_cache *arp_cache_select(ip_addr_t pa){
+
+}
+
+static struct arp_cache *arp_cache_update(ip_addr_t pa, const uint8_t *ha){
+
+}
+
+static struct arp_cache *arp_cache_insert(ip_addr_t pa, const uint8_t *ha){
+
 }
 
 static int arp_reply(struct net_iface *iface, const uint8_t *tha, ip_addr_t tpa, const uint8_t *dst){
@@ -111,6 +145,10 @@ static void arp_input(const uint8_t *data, size_t len, struct net_device *dev){
             arp_reply(iface, msg->sha, spa, msg->sha);
         }
     }
+}
+
+int arp_resolve(struct net_iface *iface, ip_addr_t pa, uint8_t *ha){
+    
 }
 
 int arp_init(void){

@@ -30,7 +30,7 @@ struct ether_tap{
     char name[IFNAMSIZ];
     int fd;
     unsigned int irq;
-}
+};
 
 #define PRIV(x) ((struct ether_tap *)x->priv)
 
@@ -44,7 +44,7 @@ static int ether_tap_addr(struct net_device *dev){
         return -1;
     }
     strncpy(ifr.ifr_name, PRIV(dev)->name, sizeof(ifr.ifr_name)-1);
-    if(ioctl(soc, SIGCGIFHWADDR, &ifr)==-1){
+    if(ioctl(soc, SIOCGIFHWADDR, &ifr)==-1){
         errorf("ioctl [SIOGIFHWADDR]: %s, dev=%s", strerror(errno), dev->name);
         close(soc);
         return -1;
@@ -103,7 +103,8 @@ static int ether_tap_open(struct net_device *dev){
 }
 
 static int ether_tap_close(struct net_device *dev){
-
+    close(PRIV(dev)->fd);
+    return 0;
 }
 
 static ssize_t ether_tap_write(struct net_device *dev, const uint8_t *frame, size_t flen){
@@ -132,7 +133,7 @@ static int ether_tap_isr(unsigned int irq, void *id){
     int ret;
 
     dev = (struct net_device *)id;
-    pfd.fd = PRIV(dev->fd);
+    pfd.fd = PRIV(dev)->fd;
     pfd.events = POLLIN;
     while(1){
         ret = poll(&pfd, 1, 0);

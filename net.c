@@ -28,7 +28,7 @@ struct net_timer{
     struct timeval interval;
     struct timeval last;
     void (*handler)(void);
-}
+};
 
 /* NOTE: if you want to add/delete the entries after net_run(), you need to protect these lists with a mutex. */
 static struct net_device *devices;
@@ -176,11 +176,33 @@ net_protocol_register(uint16_t type, void (*handler)(const uint8_t *data, size_t
 }
 
 int net_timer_register(struct timeval interval, void (*handler)(void)){
-
+    struct net_timer *timer;
+    timer = memory_alloc(sizeof(*timer));
+    if(!timer){
+        errorf("memory_alloc() failure");
+        return -1;
+    }
+    timer->interval = interval;
+    timer->handler = handler;
+    gettimeofday(&timer->last, NULL);
+    timer->next = timers;
+    timers = timer;
+    infof("timer registered: interval={%d, %d}", interval.tv_sec, interval.tv_usec);
+    return 0;
 }
 
 int net_timer_handler(void){
-    
+    struct net_timer *timer;
+    struct timeval now, diff;
+    for(timer=timers;timer;timer=timer->next){
+        gettimeofday(&now, NULL);
+        timersub(&now, &timer->last, &diff);
+        if(timercmp(&timer->interval, &diff, <)!=0){
+            timer->handler();
+            timer->last = now;
+        }
+    }
+    return 0;
 }
 
 int
@@ -235,9 +257,7 @@ net_softirq_handler(void)
     return 0;
 }
 
-int
-net_run(void)
-{
+int net_run(void){
     struct net_device *dev;
 
     if (intr_run() == -1) {
@@ -252,9 +272,7 @@ net_run(void)
     return 0;
 }
 
-void
-net_shutdown(void)
-{
+void net_shutdown(void){
     struct net_device *dev;
 
     debugf("close all devices...");
@@ -268,9 +286,7 @@ net_shutdown(void)
 #include "ip.h"
 #include "icmp.h"
 
-int
-net_init(void)
-{
+int net_init(void){
     if (intr_init() == -1) {
         errorf("intr_init() failure");
         return -1;

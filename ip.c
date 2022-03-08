@@ -48,9 +48,7 @@ static struct ip_iface *ifaces;
 static struct ip_protocol *protocols;
 static struct ip_route *routes;
 
-int
-ip_addr_pton(const char *p, ip_addr_t *n)
-{
+int ip_addr_pton(const char *p, ip_addr_t *n){
     char *sp, *ep;
     int idx;
     long ret;
@@ -73,9 +71,7 @@ ip_addr_pton(const char *p, ip_addr_t *n)
     return 0;
 }
 
-char *
-ip_addr_ntop(ip_addr_t n, char *p, size_t size)
-{
+char *ip_addr_ntop(ip_addr_t n, char *p, size_t size){
     uint8_t *u8;
 
     u8 = (uint8_t *)&n;
@@ -83,9 +79,37 @@ ip_addr_ntop(ip_addr_t n, char *p, size_t size)
     return p;
 }
 
-static void
-ip_dump(const uint8_t *data, size_t len)
-{
+int ip_endpoint_pton(const char *p, struct ip_endpoint *n){
+    char *sep;
+    char addr[IP_ADDR_STR_LEN] = {};
+    long int port;
+
+    sep = strrchr(p, ':');
+    if(!sep){
+        return -1;
+    }
+    memcpy(addr, p, sep-p);
+    if(ip_addr_pton(addr, &n->addr)==-1){
+        return -1;
+    }
+    port = strtol(sep+1, NULL, 10);
+    if(port<=0 || port > UINT16_MAX){
+        return -1;
+    }
+    n->port = hton16(port);
+    return 0;
+}
+
+char *ip_endpoint_ntop(const struct ip_endpoint *n, char *p, size_t size){
+    size_t offset;
+
+    ip_addr_ntop(n->addr, p, size);
+    offset = strlen(p);
+    snprintf(p+offset, size-offset, ":%d", ntoh16(n->port));
+    return p;
+}
+
+static void ip_dump(const uint8_t *data, size_t len){
     struct ip_hdr *hdr;
     uint8_t v, hl, hlen;
     uint16_t total, offset;
@@ -254,9 +278,7 @@ int ip_protocol_register(uint8_t type, void (*handler)(const uint8_t *data, size
     return 0;
 }
 
-static void
-ip_input(const uint8_t *data, size_t len, struct net_device *dev)
-{
+static void ip_input(const uint8_t *data, size_t len, struct net_device *dev){
     struct ip_hdr *hdr;
     uint8_t v;
     uint16_t hlen, total, offset;
@@ -316,9 +338,7 @@ ip_input(const uint8_t *data, size_t len, struct net_device *dev)
     /* unsupported protocol */
 }
 
-static int
-ip_output_device(struct ip_iface *iface, const uint8_t *data, size_t len, ip_addr_t dst)
-{
+static int ip_output_device(struct ip_iface *iface, const uint8_t *data, size_t len, ip_addr_t dst){
     uint8_t hwaddr[NET_DEVICE_ADDR_LEN] = {};
 
     if (NET_IFACE(iface)->dev->flags & NET_DEVICE_FLAG_NEED_ARP) {
@@ -334,9 +354,7 @@ ip_output_device(struct ip_iface *iface, const uint8_t *data, size_t len, ip_add
     return net_device_output(NET_IFACE(iface)->dev, NET_PROTOCOL_TYPE_IP, data, len, hwaddr);
 }
 
-static ssize_t
-ip_output_core(struct ip_iface *iface, uint8_t protocol, const uint8_t *data, size_t len, ip_addr_t src, ip_addr_t dst, ip_addr_t nexthoop, uint16_t id, uint16_t offset)
-{
+static ssize_t ip_output_core(struct ip_iface *iface, uint8_t protocol, const uint8_t *data, size_t len, ip_addr_t src, ip_addr_t dst, ip_addr_t nexthoop, uint16_t id, uint16_t offset){
     uint8_t buf[IP_TOTAL_SIZE_MAX];
     struct ip_hdr *hdr;
     uint16_t hlen, total;
@@ -363,9 +381,7 @@ ip_output_core(struct ip_iface *iface, uint8_t protocol, const uint8_t *data, si
     return ip_output_device(iface, buf, total, nexthoop);
 }
 
-static uint16_t
-ip_generate_id(void)
-{
+static uint16_t ip_generate_id(void){
     static mutex_t mutex = MUTEX_INITIALIZER;
     static uint16_t id = 128;
     uint16_t ret;
@@ -395,6 +411,8 @@ ssize_t ip_output(uint8_t protocol, const uint8_t *data, size_t len, ip_addr_t s
     iface = route->iface;
     if(src!=IP_ADDR_ANY && src!=iface->unicast){
         errorf("unable to output with specified source address, addr=%s", ip_addr_ntop(src, addr, sizeof(addr)));
+        char addr999[IP_ADDR_STR_LEN];
+        errorf("iface->unicast, addr=%s", ip_addr_ntop(iface->unicast, addr999, sizeof(addr999)));
         return -1;
     }
     nexthop = (route->nexthop != IP_ADDR_ANY) ? route->nexthop : dst;

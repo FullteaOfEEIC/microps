@@ -165,8 +165,9 @@ static struct ip_route *ip_route_add(ip_addr_t network, ip_addr_t netmask, ip_ad
 
 static struct ip_route *ip_route_lookup(ip_addr_t dst){
     struct ip_route *route, *candidate = NULL;
+
     for(route=routes;route;route=route->next){
-        if((dst&route->netmask) == route->netmask){
+        if((dst&route->netmask) == route->network){
             if(!candidate || ntoh32(candidate->netmask) < ntoh32(route->netmask)){
                 candidate = route;
             }
@@ -411,8 +412,6 @@ ssize_t ip_output(uint8_t protocol, const uint8_t *data, size_t len, ip_addr_t s
     iface = route->iface;
     if(src!=IP_ADDR_ANY && src!=iface->unicast){
         errorf("unable to output with specified source address, addr=%s", ip_addr_ntop(src, addr, sizeof(addr)));
-        char addr999[IP_ADDR_STR_LEN];
-        errorf("iface->unicast, addr=%s", ip_addr_ntop(iface->unicast, addr999, sizeof(addr999)));
         return -1;
     }
     nexthop = (route->nexthop != IP_ADDR_ANY) ? route->nexthop : dst;
@@ -429,9 +428,7 @@ ssize_t ip_output(uint8_t protocol, const uint8_t *data, size_t len, ip_addr_t s
     return len;
 }
 
-int
-ip_init(void)
-{
+int ip_init(void){
     if (net_protocol_register(NET_PROTOCOL_TYPE_IP, ip_input) == -1) {
         errorf("net_protocol_register() failure");
         return -1;

@@ -168,6 +168,7 @@ static void udp_input(const uint8_t *data, size_t len, ip_addr_t src, ip_addr_t 
     entry->foreign.addr = src;
     entry->foreign.port = hdr->src;
     entry->len = len-sizeof(*hdr);
+    memcpy(entry->data, (uint8_t *)(hdr+1), len-sizeof(hdr));
     if(!queue_push(&pcb->queue, entry)){
         mutex_unlock(&mutex);
         errorf("queue_push() failure");
@@ -199,14 +200,14 @@ ssize_t udp_output(struct ip_endpoint *src, struct ip_endpoint *dst, const uint8
     pseudo.dst = dst->addr;
     pseudo.zero = 0;
     pseudo.protocol = IP_PROTOCOL_UDP;
-    pseudo.len = hton16(len);
+    pseudo.len = hton16(total);
     psum = ~cksum16((uint16_t *)&pseudo, sizeof(pseudo), 0);
-    hdr->sum = cksum16((uint16_t *)hdr, len, psum);
+    hdr->sum = cksum16((uint16_t *)hdr, total, psum);
 
     debugf("%s => %s, len=%zu (payload=%zu)",
         ip_endpoint_ntop(src, ep1, sizeof(ep1)), ip_endpoint_ntop(dst, ep2, sizeof(ep2)), total, len);
     udp_dump((uint8_t *)hdr, total);
-    if(ip_output(IP_PROTOCOL_UDP, data, total, src->addr, dst->addr)==-1){
+    if(ip_output(IP_PROTOCOL_UDP, (uint8_t *)hdr, total, src->addr, dst->addr)==-1){
         errorf("ip_output() failure");
         return -1;
     }

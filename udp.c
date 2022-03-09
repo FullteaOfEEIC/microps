@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <errno.h>
 
 #include "util.h"
 #include "ip.h"
@@ -213,6 +214,10 @@ ssize_t udp_output(struct ip_endpoint *src, struct ip_endpoint *dst, const uint8
     }
     return len;
 
+}
+
+static void event_handler(void *arg){
+    
 }
 
 int udp_init(void){
